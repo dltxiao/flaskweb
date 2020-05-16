@@ -6,6 +6,7 @@ from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -16,6 +17,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] =\
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
+migrate = Migrate(app, db)
 
 class Role(db.Model):
     __tablename__='roles'
@@ -31,6 +33,7 @@ class User(db.Model):
     __tablename__ = 'Users'
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), unique=True, index=True)
+    sexy = db.Column(db.SmallInteger)
     role_id = db.Column(db.Integer, db.ForeignKey('roles.id')) 
 
     def __repr__(self):
@@ -42,6 +45,11 @@ class NameForm(FlaskForm):
 
 bootstrap = Bootstrap(app)
 moment = Moment(app)
+
+@app.shell_context_processor
+def make_shell_context():
+    return dict(db=db, User=User, Role=Role)
+
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -60,6 +68,14 @@ def index():
     form=NameForm()
     # 检测表单是否提交过
     if form.validate_on_submit():
+        user = User.query.filter_by(username=form.name.data).first()
+        if user == None:
+            user = User(username=form.name.data)
+            db.session.add(user)
+            db.session.commit()
+            session['known'] = False
+        else:
+            session['known'] = True
         old_name = session.get('name')
         if old_name is not None and old_name != form.name.data:
             flash('Looks like you have changeed your name! ') #在模板中使用get_flashed_messages()
@@ -72,7 +88,7 @@ def index():
     # return render_template('index.html', form=form, name=name, current_time = datetime.utcnow())
     # POST / redirct / GET 方式,点击提交后，返回下面的重定向，让客户端重新以GET方式获取/，最外层的return则处理GET请求，以session中保存的信息来渲染页面。
         return redirect(url_for('index'))
-    return render_template('index.html', form=form, name=session.get('name'), current_time = datetime.utcnow())
+    return render_template('index.html', form=form, name=session.get('name'), known=session.get('known',False), current_time = datetime.utcnow())
 
 @app.route('/user/<name>')
 def user(name):
