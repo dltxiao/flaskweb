@@ -7,6 +7,8 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
+from flask_mail import Mail,Message
+from threading import Thread
 import os
 
 basedir = os.path.abspath(os.path.dirname(__file__))
@@ -16,8 +18,22 @@ app.config['SECRET_KEY'] = 'someonelikeyou'
 app.config['SQLALCHEMY_DATABASE_URI'] =\
         'sqlite:///' + os.path.join(basedir, 'data.sqlite')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+# mail config
+app.config['MAIL_SERVER'] = 'smtp.exmail.qq.com'
+app.config['MAIL_PORT'] = 587
+app.config['MAIL_USE_TLS'] = True
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['FLASKZ_MAIL_SUBJECT_PREFIX'] = '[Flaskz]'
+app.config['FLASKZ_MAIL_SENDER'] = 'Flaskz Admin <zhongxiao@secway.net.cn>'
+app.config['FLASKZ_ADMIN'] = os.environ.get('FLASKZ_ADMIN')
+
+# app
 db = SQLAlchemy(app)
 migrate = Migrate(app, db)
+mail = Mail(app)
+bootstrap = Bootstrap(app)
+moment = Moment(app)
 
 class Role(db.Model):
     __tablename__='roles'
@@ -43,8 +59,20 @@ class NameForm(FlaskForm):
     name = StringField('What is your name?', validators=[DataRequired()])
     submit = SubmitField('提交')
 
-bootstrap = Bootstrap(app)
-moment = Moment(app)
+def send_async_email(app, msg):
+    # 被线程调用时，激活app上下文
+    with app.app_context():
+        mail.send(msg)
+
+def send_email(to, subject, template, **kwargs):
+    msg = Message(app.config['FLASKZ_MAIL_SUBJECT_PREFIX'] + subject,
+            sender = app.config['FLASKZ_MAIL_SENDER'], recipients=[to])
+    msg.body = render_template(template + '.txt', **kwargs)
+    msg.html = render_template(template + '.html', **kwargs)
+    # 开辟一个新的线程来发送邮件，但新线程默认没有app上下文，所以把app作为参数传给这个函数，用于创建上下文。
+    thr = Thread(target=send_async_email, args=[app, msg])
+    thr.start()
+    return thr
 
 @app.shell_context_processor
 def make_shell_context():
@@ -74,6 +102,10 @@ def index():
             db.session.add(user)
             db.session.commit()
             session['known'] = False
+            if app.config['FLASKZ_ADMIN']:
+                print('Flaskz_admin has already configured, start send mail.')
+                send_email(app.config['FLASKZ_ADMIN'], 'New User',
+                        'mail/new_user', user=user)
         else:
             session['known'] = True
         old_name = session.get('name')
