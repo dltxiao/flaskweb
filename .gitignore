@@ -1,0 +1,12 @@
+# Python:
+*.pyc
+*.py[cod]
+*.so
+*.egg
+*.egg-info
+dist
+build
+.vscode/
+data-dev.sqlite
+env/
+__pycache__/
