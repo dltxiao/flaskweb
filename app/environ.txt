@@ -1,0 +1,6 @@
+export FLASK_APP=app.py
+export FLASK_DEBUG=1
+export MAIL_USERNAME='zhongxiao@secway.net.cn'
+export MAIL_PASSWORD='C@1lmexiao'
+export FLASKZ_ADMIN='729457563@qq.com'
+
