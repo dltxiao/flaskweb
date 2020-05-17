@@ -1,0 +1,27 @@
+usage:
+
+code:
+# from flask import flask-migrate
+
+...
+
+migrate = Migrate(app)
+
+cli:
+flask db init
+flask db migrate -m "xxx"
+flask db upgrade
+flask db downgrade
+
+###
+使用 Flask-Migrate 管理数据库模式变化的步骤如下。
+
+(1) 对模型类做必要的修改。
+
+(2) 执行 flask db migrate 命令，自动创建一个迁移脚本。
+
+(3) 检查自动生成的脚本，根据对模型的实际改动进行调整。
+
+(4) 把迁移脚本纳入版本控制。
+
+(5) 执行 flask db upgrade 命令，把迁移应用到数据库中。
