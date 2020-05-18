@@ -1,8 +1,9 @@
 from datetime import datetime
-from flask import render_template, session, redirect, url_for, flash
+from flask import render_template, session, redirect, url_for, flash, current_app
 # 导入本层目录中的某个文件
 from . import main
 # 导入本层目录中的某个文件中的对象
+from ..email import send_email
 from .forms import NameForm
 from .. import db
 from ..models import User
@@ -19,9 +20,10 @@ def index():
             db.session.commit()
             session['known'] = False
             # 增加蓝本后，邮件功能无法使用，
-            # if app.config['FLASKZ_ADMIN']:
-               # send_email(app.config['FLASKZ_ADMIN'], 'New User',
-                #        'mail/new_user', user=user)
+            if current_app.config['FLASKZ_ADMIN']:
+                print('1111111111111111111111111111111111111111')
+                send_email(current_app.config['FLASKZ_ADMIN'], 'New User',
+                        'mail/new_user', user=user)
         else:
             session['known'] = True
         old_name = session.get('name')

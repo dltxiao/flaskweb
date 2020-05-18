@@ -1,4 +1,7 @@
+from threading import Thread
+from flask import current_app, render_template
 from flask_mail import Message
+from . import mail
 
 def send_async_email(app, msg):
     # 被线程调用时，激活app上下文
@@ -6,6 +9,8 @@ def send_async_email(app, msg):
         mail.send(msg)
 
 def send_email(to, subject, template, **kwargs):
+    print('2222222222222222222222222222222')
+    app = current_app._get_current_object()
     msg = Message(app.config['FLASKZ_MAIL_SUBJECT_PREFIX'] + subject,
             sender = app.config['FLASKZ_MAIL_SENDER'], recipients=[to])
     msg.body = render_template(template + '.txt', **kwargs)
