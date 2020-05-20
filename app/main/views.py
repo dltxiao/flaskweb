@@ -7,6 +7,7 @@ from ..email import send_email
 from .forms import NameForm
 from .. import db
 from ..models import User
+from flask_login import login_required
 
 @main.route('/', methods=['GET', 'post'])
 def index():
@@ -34,3 +35,8 @@ def index():
         # 同一蓝本中的重定向可以简写为.xxx，不同蓝本中应写全blurprint_name.path_name
         return redirect(url_for('.index'))
     return render_template('index.html', form=form, name=session.get('name'), known=session.get('known', False),current_time=datetime.utcnow())
+
+@main.route('/secret')
+@login_required
+def secret():
+    return 'Only authenticated users are allowed to view!'
